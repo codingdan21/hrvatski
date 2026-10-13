@@ -1,0 +1,47 @@
+name: Build APK
+
+on:
+  push:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Unpack project
+        run: unzip -o hrvatski-project.zip
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "8.11.1"
+
+      - name: Build and test
+        run: gradle --no-daemon testDebugUnitTest assembleDebug
+
+      - name: Rename APK
+        run: cp app/build/outputs/apk/debug/app-debug.apk Hrvatski.apk
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Hrvatski-APK
+          path: Hrvatski.apk
+
+      - name: Publish release
+        if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: latest
+          name: Hrvatski (latest build)
+          body: Latest build of the Hrvatski app. Download Hrvatski.apk on your phone and open it to install.
+          files: Hrvatski.apk
+          make_latest: true
